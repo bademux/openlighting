@@ -1,4 +1,4 @@
-FROM alpine:3.5
+FROM alpine:3.9
 
 ARG OLA_VERSION=0.10.7
 ARG LIBLO_VERSION=0.30
@@ -29,9 +29,7 @@ RUN apk add --no-cache --virtual .build-deps \
       openssl \
       protobuf-dev \
       util-linux-dev \
-      libftdi1-dev \
-      #remove line on OLA_VERSION=0.10.8 https://github.com/OpenLightingProject/ola/issues/1463
-      py-pip && pip install --no-cache-dir protobuf==3.1.0 && \
+      libftdi1-dev &&\
       #install liblo
       wget --no-check-certificate -nv -O- "https://github.com/radarsat1/liblo/releases/download/$LIBLO_VERSION/liblo-$LIBLO_VERSION.tar.gz" | tar xvz && \
       cd liblo-* &&\
@@ -40,7 +38,9 @@ RUN apk add --no-cache --virtual .build-deps \
       make && make install && \
       cd .. && \
       #install OpenLightingProject
-      wget --no-check-certificate -nv -O- "https://github.com/OpenLightingProject/ola/releases/download/$OLA_VERSION/ola-$OLA_VERSION.tar.gz" | tar xvz && \
+      #use release version on https://github.com/OpenLightingProject/ola/milestones/0.10.8
+      #wget --no-check-certificate -nv -O- "https://github.com/OpenLightingProject/ola/releases/download/$OLA_VERSION/ola-$OLA_VERSION.tar.gz" | tar xvz
+      git clone https://github.com/OpenLightingProject/ola.git --depth=1 && \
       cd ola* && \
       autoreconf -i && \
       ./configure && \
