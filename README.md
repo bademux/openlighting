@@ -1,5 +1,7 @@
 # Multiarch OpenLightingArchitecture (DMX) docker
 
+[![Travis-CI](https://travis-ci.org/bademux/openlighting.svg)](https://travis-ci.org/bademux/openlighting)
+
 Ideas borrowed from https://github.com/JanKoppe/openlightingarchitecture-moby
 Multiarch build conf for travis https://github.com/moikot/golang-dep
 
