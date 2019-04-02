@@ -9,7 +9,7 @@ services:
 
 env:
   global:
-    - DOCKER_PLATFORMS="linux/amd64,linux/arm/v6"
+    - DOCKER_PLATFORMS="linux/arm/v6"
     - DOCKER_COMMIT=${TRAVIS_COMMIT::6}
     - DOCKER_TAG="${TRAVIS_TAG}"
     - BUILDKIT_HOST=tcp://0.0.0.0:1234
