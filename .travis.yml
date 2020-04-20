@@ -1,51 +1,37 @@
-sudo: required
-
 dist: xenial
-
-language: bash
+os: linux
+language: shell
 
 services:
   - docker
 
 env:
   global:
-    - DOCKER_PLATFORMS="linux/arm/v6"
+    - DOCKER_PLATFORMS="linux/amd64,linux/386"
     - DOCKER_COMMIT=${TRAVIS_COMMIT::6}
     - DOCKER_TAG="${TRAVIS_TAG}"
-    - BUILDKIT_HOST=tcp://0.0.0.0:1234
-    - DOCKER_CLI_EXPERIMENTAL=enabled
-    - secure: at01B/fbMZtfZiABZjVTyyc6jlSxvuKCZfMdXH9p2XurnVMqRMfriURPORcqBec/bqOGMoUlYSlJMT+g2w1CO53HC08dhniNq9cl5CmR4AhrMFzLIb7iW5KxdXmLOf/DrlYr9+wj7RILxJKDvsTCnehAzOGUBmaRnxFTKaLmXmdUOym5iz1w4hsQe5HE2wC/mzHc8mNZCSdNycvPIFPrO8R/lDhKokIvnQpwwBZisBCVkXd6dp2354GBeIcoYMq+B8uAosPHHhptu5Pbue1fWT4woX97E79PgxWxYcubkueohPIzfCm9MFNR8HuA9DuH3eUt7KYwHjZwIg8ysrMC8TshZkvT9glDTOgm+2785fkK+4IidqSk7cU8W5FGni+No+Ptgx703Na6ZHI76261uqK+k+u2hGNZjrb+3U7OJ15jnJnd1mGsEiEH1Z0oB0bi5sPb97RT1IA4amDorblYfJqaycrVdfoM7923Myjqy07cU+PKDQdsCHuPSEB8v8YHEVaQuCavDOHMeXL/yUEnKgXnUKoMm22r/W34xfYCl8MNU+H+4cDlnhiltmhhrhDhuJu/LsQYtNoMEFP+Xzs7TKAZvdwAem4/O9IMATxs8YLc+LzVG+a0lgRoZMUvmXMqI+PL43CAvvn5WoTWRAG2wDKw1JE0CLii7q63/He6DjI=
-    
-addons:
-  apt:
-    packages:
-      - docker-ce
+    - DOCKER_IMAGE="bademux/openlighting"
+    - secure: hWm6MLABydcD9u4gskTZ+IsEPg1I5tGmRL3SmjGXaixjMeIWLwzMefZt+S38710fqfFD7XIhAJ5b5LZCaPCCbo1smXPnUNMfHnbfxZ7vafCvtYbspuRdWygJMKsi6VWnPUeDBGshxau82NErivOr+wXBppJSpqAVHiN1dsUwWJeCqIe4nG6YiwrTTFzACf/ZrbkiX/cemF+aQ2un+mAQu7hbWPoCfq6dJhu+Ydab/qVeobxOE18v6qXGyvC5H17HpI8/ch2zS2VeIlsHOnuUA8tq4BnfDSumo/VCdO3B5wVQjy/CQ4mTMcNMy1955e3zA4xMpF3IY+G5/e0/DPAGXlPrUuCvu3FqB/bfclLAcbSjgj7kBg5JNw9aCashFKiK7yXjQHQCRilHdKZlAY+0Nl6OBf/lpLmdjlImMkaXcBNgrWIQ1uH8Nqt9SMFd1ygwcsVQOxCZy8qe4fvc5Bmq0l2TOVYK7V8L9uY+TluRzr0lr9Fb8hSrk/wd5WHdvGgn46VWZIOwPG0quyoA6Y6yDoC0j2CrncFH1gdU/Rwxq++k+9JQJMYcqb+4xDFIH927+8UDIEOjupu0FUrFIEp2e0pgCaigRM2f4ntvFCgkQmRcuoRsmw+rAaPPT6LQUw1UhFBWPky9/3JMXSYSqelf5NwWyFMTMRGJrxuQQLtwcHE=
 
 git:
   depth: 1
 
-before_install: >
-  ./.travis/setup.sh \
-    "${DOCKER_PLATFORMS}"
+before_install: bash ./.travis/builder.sh pre_install
+after_success: bash ./.travis/builder.sh post_install
+after_failure: bash ./.travis/builder.sh post_install
 
-jobs:
+stages:
+  - name: build_amd64
+    if: branch != master AND tag IS blank
+  - name: build_and_deploy
+    if: tag =~ /^v[0-9]+\.[0-9]+\.[0-9]+$/
+
+matrix:
   include:
-    - script: >
-        ./.travis/build.sh \
-          "${DOCKER_IMAGE}" \
-          "${DOCKER_COMMIT}" \
-          "${DOCKER_PLATFORMS}"
-
-deploy:
-  provider: script
-  script: >-
-    bash ./.travis/push.sh
-    "${DOCKER_IMAGE}"
-    "${DOCKER_COMMIT}"
-    "${DOCKER_TAG}"
-    "${DOCKER_PLATFORMS}"
-  on:
-    tags: true
+    - stage: build_amd64
+      script: bash ./.travis/builder.sh build ${DOCKER_IMAGE} ${DOCKER_COMMIT} "linux/amd64"
+    - stage: build_and_deploy
+      script: bash ./.travis/builder.sh build_and_deploy ${DOCKER_IMAGE} ${DOCKER_TAG} ${DOCKER_PLATFORMS}
 
 notifications:
   email: false

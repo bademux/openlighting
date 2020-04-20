@@ -1,15 +1,15 @@
-FROM alpine:3.9
+FROM alpine:3.6 as builder 
+# alpine:3.6 provides protobuf 3.1 - OLA currently requires protobuf < 3.2, see issue 1192
 
-ARG OLA_VERSION=0.10.7
-ARG LIBLO_VERSION=0.30
+ENV LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/local/lib64:/usr/local/lib"
 
-MAINTAINER bademux
+#RUN git clone -c advice.detachedHead=false clone -b "0.10.7" --depth 1 "git://github.com/OpenLightingProject/ola.git" /tmp/proj-tmp/ola
 
-WORKDIR /tmp
+ADD ./tmp /tmp/proj-tmp
 
-RUN apk add --no-cache libmicrohttpd libusb-compat protobuf util-linux libftdi1
+WORKDIR /tmp/proj-tmp
 
-RUN apk add --no-cache --virtual .build-deps \
+RUN apk add --no-cache \
       automake \
       autoconf \
       bison \
@@ -29,33 +29,33 @@ RUN apk add --no-cache --virtual .build-deps \
       openssl \
       protobuf-dev \
       util-linux-dev \
-      libftdi1-dev &&\
-      #install liblo
-      wget --no-check-certificate -nv -O- "https://github.com/radarsat1/liblo/releases/download/$LIBLO_VERSION/liblo-$LIBLO_VERSION.tar.gz" | tar xvz && \
-      cd liblo-* &&\
-      sed -i 's/-Werror/-Wno-error/' configure.ac &&\
-      ./autogen.sh --enable-ipv6 &&\
-      make && make install && \
-      cd .. && \
-      #install OpenLightingProject
-      #use release version on https://github.com/OpenLightingProject/ola/milestones/0.10.8
-      #wget --no-check-certificate -nv -O- "https://github.com/OpenLightingProject/ola/releases/download/$OLA_VERSION/ola-$OLA_VERSION.tar.gz" | tar xvz
-      git clone https://github.com/OpenLightingProject/ola.git --depth=1 && \
-      cd ola* && \
-      autoreconf -i && \
-      ./configure && \
-      make && make install && \
-      cd .. && \
-      #cleanup
-      rm -rf /tmp/* && \
-      apk del .build-deps
+      libftdi1-dev
+
+RUN cd /tmp/proj-tmp/ola && \
+    autoreconf -i && \
+    ./configure --disable-all-plugins --disable-doxygen-version --disable-e133--without-dns-sd \
+                --disable-unittests --disable-root-check  --disable-examples --disable-python-libs \
+                --enable-http --enable-ftdidmx && \
+    make && make install
+
+FROM alpine:3.11
+
+MAINTAINER bademux
+
+ENV OLA_OPTS=""
+ENV LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/local/lib64:/usr/local/lib"
 
 WORKDIR /
+
+COPY --from=builder /usr/local/bin /usr/local/bin
+COPY --from=builder /usr/local/share /usr/local/share
 
 EXPOSE 9090
 EXPOSE 9010
 
-RUN adduser -S olad
+RUN apk add --no-cache libmicrohttpd libusb-compat protobuf util-linux libftdi1
+
+RUN adduser -D -H olad
 USER olad
 
-ENTRYPOINT ["olad"]
+ENTRYPOINT olad $OLA_OPTS
