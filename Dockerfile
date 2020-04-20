@@ -3,8 +3,6 @@ FROM alpine:3.6 as builder
 
 ENV LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/local/lib64:/usr/local/lib"
 
-#RUN git clone -c advice.detachedHead=false clone -b "0.10.7" --depth 1 "git://github.com/OpenLightingProject/ola.git" /tmp/proj-tmp/ola
-
 ADD ./tmp /tmp/proj-tmp
 
 WORKDIR /tmp/proj-tmp
@@ -18,7 +16,6 @@ RUN apk add --no-cache \
       cppunit \
       cppunit-dev \
       g++ \
-      git \
       libtool \
       libmicrohttpd-dev \
       libusb-compat-dev \
