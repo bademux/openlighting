@@ -17,11 +17,12 @@ FROM alpine:3.13.2
 MAINTAINER bademux
 EXPOSE 9090
 EXPOSE 9010
-RUN apk add --no-cache --update libmicrohttpd libusb-compat protobuf util-linux libftdi1
+RUN apk add --no-cache --update libmicrohttpd libusb-compat protobuf util-linux libusb libftdi1
 ENV OLA_OPTS=""
 ENV LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/local/lib64:/usr/local/lib"
-COPY --from=builder /usr/local/bin /usr/local/bin
 COPY --from=builder /usr/local/share /usr/local/share
-RUN adduser -D -H olad
+COPY --from=builder /usr/local/bin /usr/local/bin
+COPY --from=builder /usr/local/lib /usr/local/lib
+RUN adduser -D olad -G usb
 USER olad
 ENTRYPOINT olad $OLA_OPTS
