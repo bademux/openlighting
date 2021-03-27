@@ -1,7 +1,7 @@
 FROM scratch as caching-downloader
 ADD https://github.com/OpenLightingProject/ola/archive/0.10.8.tar.gz /ola.tar.gz
 
-FROM alpine:3.13.2 as builder 
+FROM alpine:3.13.2 as builder
 ENV LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/local/lib64:/usr/local/lib"
 COPY --from=caching-downloader / /tmp
 WORKDIR /build
@@ -11,7 +11,7 @@ RUN apk add --no-cache --update automake autoconf bison flex ccache g++ libtool 
 #TODO remove --disable-root-check
 RUN autoreconf -i && \
     ./configure --disable-doxygen-version --disable-examples --disable-unittests --disable-python-libs --disable-root-check && \
-    make install
+    make install -j$(nproc)
 
 FROM alpine:3.13.2
 MAINTAINER bademux
